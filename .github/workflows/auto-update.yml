@@ -79,6 +79,16 @@ jobs:
             git diff README.md
           fi
 
+      - name: Update CHANGELOG
+        env:
+          NEXT_ACTION: ${{ steps.next-version.outputs.next_tag }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          ENTRY="## [${NEXT_ACTION}] - ${DATE}\n\n### Changed\n\n- Bump bundled CLI to WAFtester v${CLI_VERSION}\n"
+          # Insert after the first line (# Changelog header)
+          sed -i "0,/^## /{s|^## |${ENTRY}\n## |}" CHANGELOG.md
+          echo "📝 Added CHANGELOG entry for ${NEXT_ACTION}"
+
       - name: Commit version bump
         run: |
           git config user.name "github-actions[bot]"
@@ -106,9 +116,11 @@ jobs:
 
           ### Usage
 
+          \`\`\`yaml
           - uses: waftester/waftester-action@v1
             with:
-              target: https://app.example.com"
+              target: https://app.example.com
+          \`\`\`"
 
           # Remove leading whitespace from indented heredoc lines
           NOTES=$(echo "$NOTES" | sed 's/^          //')

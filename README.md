@@ -162,9 +162,13 @@ jobs:
 
 - if: always() && github.event_name == 'pull_request'
   uses: actions/github-script@v7
+  env:
+    BYPASS_COUNT: ${{ steps.waf.outputs.bypass-count }}
+    WAF_SUMMARY: ${{ steps.waf.outputs.summary }}
   with:
     script: |
-      const count = '${{ steps.waf.outputs.bypass-count }}';
+      const count = process.env.BYPASS_COUNT;
+      const summary = process.env.WAF_SUMMARY;
       const status = count === '0' ? ':white_check_mark:' : ':red_circle:';
       github.rest.issues.createComment({
         owner: context.repo.owner,
@@ -172,7 +176,7 @@ jobs:
         issue_number: context.issue.number,
         body: `## ${status} WAF Scan Results\n\n` +
               `**Bypasses:** ${count}\n\n` +
-              `${{ steps.waf.outputs.summary }}`
+              summary
       });
 ```
 
@@ -259,7 +263,7 @@ jobs:
 | `exit-code` | WAFtester exit code (see table below) | `0` |
 | `bypass-count` | Number of WAF bypasses found | `12` |
 | `sarif-file` | Path to the generated SARIF file | `waftester-results.sarif` |
-| `summary` | One-line human-readable summary | `12 bypasses (4.2%)` |
+| `summary` | One-line human-readable summary | `WAFtester found 12 WAF bypass(es)...` |
 | `version` | Installed WAFtester version | `2.8.2` |
 
 ---
@@ -272,7 +276,7 @@ The action preserves WAFtester's 7 semantic exit codes:
 |------|---------|:-:|:-:|
 | 0 | Clean — no issues found | Pass | Pass |
 | 1 | Bypasses found | **Fail** (if true) | Pass |
-| 2 | Runtime errors occurred | Pass | **Fail** (if true) |
+| 2 | Too many errors (threshold exceeded) | Pass | **Fail** (if true) |
 | 3 | Configuration error | Pass | **Fail** (if true) |
 | 4 | Target unreachable | Pass | **Fail** (if true) |
 | 5 | Interrupted (timeout/signal) | Pass | **Fail** (if true) |
@@ -435,8 +439,8 @@ This GitHub Action is one of several ways to run WAFtester:
 - [**WAFtester CLI**](https://github.com/waftester/waftester)
   — main project with full documentation
 - [**Examples**](./examples/) — 6 ready-to-use workflow files
-- [**Changelog**](https://github.com/waftester/waftester/blob/main/CHANGELOG.md)
-  — release notes and version history
+- [**Changelog**](./CHANGELOG.md)
+  — action release notes and version history
 - [**Security Policy**](./SECURITY.md)
   — vulnerability reporting
 - [**npm Package**](https://www.npmjs.com/package/@waftester/cli)

@@ -119,6 +119,7 @@ runs:
       if: >-
         inputs.upload-sarif == 'true' &&
         inputs.format == 'sarif' &&
+        steps.scan.outputs.sarif-file != '' &&
         always()
       uses: github/codeql-action/upload-sarif@v4
       with:

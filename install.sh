@@ -115,11 +115,12 @@ if [[ "${VERSION}" == "latest" || -z "${VERSION}" ]]; then
 
   # F50: Capture HTTP status for better error messages
   API_RESPONSE=$(curl -sSL -w "\n%{http_code}" \
+    --max-time 30 --connect-timeout 10 \
     -H "Authorization: token ${GITHUB_TOKEN}" \
     -H "Accept: application/vnd.github+json" \
     -H "X-GitHub-Api-Version: 2022-11-28" \
     "https://api.github.com/repos/waftester/waftester/releases/latest" \
-    2>&1) || true
+    2>/dev/null) || true
 
   HTTP_STATUS=$(echo "${API_RESPONSE}" | tail -1)
   LATEST_JSON=$(echo "${API_RESPONSE}" | sed '$d')

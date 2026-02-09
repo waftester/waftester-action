@@ -112,8 +112,11 @@ if [[ "${INPUT_SCAN_TYPE}" != "custom" ]]; then
 fi
 
 # Extra arguments — use eval to preserve quoting (e.g., -H "Bearer ...")
+# WARNING: eval executes shell syntax in INPUT_ARGS. This is safe because
+# INPUT_ARGS comes from workflow YAML (author-controlled), NOT from
+# untrusted input. Never pass user-controlled data (issue titles, PR
+# bodies, commit messages) into the args input without sanitization.
 if [[ -n "${INPUT_ARGS}" ]]; then
-  # eval handles quoted strings properly; set -f prevents glob expansion
   set -f
   eval "CMD+=(${INPUT_ARGS})"
   set +f
