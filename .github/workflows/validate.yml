@@ -17,7 +17,7 @@ jobs:
       - name: actionlint
         run: |
           # Pin installer to specific commit — never curl|bash from floating main
-          bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/62dc61a45fc95eed8c2b441f0b044a1f6e3ac8b5/scripts/download-actionlint.bash)
+          bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/a443f344ff32813837fa49f7aa6cbc478d770e62/scripts/download-actionlint.bash)
           ./actionlint -color
 
   # ── action-yml-schema — validates action.yml against official schema ──
