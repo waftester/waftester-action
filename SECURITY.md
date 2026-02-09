@@ -9,7 +9,7 @@ to the main project:
 **For vulnerabilities specific to this GitHub Action**
 (install.sh, entrypoint.sh, action.yml), report via:
 
-- **Email:** security@waftester.com
+- **Email:** <security@waftester.com>
 - **GitHub:** [Private vulnerability report](https://github.com/waftester/waftester-action/security/advisories/new)
 
 ## Response
@@ -21,6 +21,7 @@ to the main project:
 ## Scope
 
 In scope for **this action repository**:
+
 - Shell injection in `install.sh` or `entrypoint.sh`
 - Checksum verification bypass
 - Insecure file permissions during install
@@ -28,6 +29,7 @@ In scope for **this action repository**:
 - Supply chain risks (binary download integrity)
 
 Out of scope (report to main project instead):
+
 - Scanner logic, payload handling, SARIF generation
 - False positives/negatives in WAF detection
 - License questions

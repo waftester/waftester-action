@@ -93,13 +93,13 @@ if [[ "${INPUT_SCAN_TYPE}" != "custom" ]]; then
   # Target URL (required)
   CMD+=("-u" "${INPUT_TARGET}")
 
-  # Output format
-  if [[ -n "${INPUT_FORMAT}" ]]; then
+  # Output format (vendor subcommand has its own output handling)
+  if [[ -n "${INPUT_FORMAT}" && "${INPUT_SCAN_TYPE}" != "vendor" ]]; then
     CMD+=("-format" "${INPUT_FORMAT}")
   fi
 
-  # Output file
-  if [[ -n "${INPUT_OUTPUT}" ]]; then
+  # Output file (vendor subcommand has its own output handling)
+  if [[ -n "${INPUT_OUTPUT}" && "${INPUT_SCAN_TYPE}" != "vendor" ]]; then
     CMD+=("-output" "${INPUT_OUTPUT}")
   fi
 

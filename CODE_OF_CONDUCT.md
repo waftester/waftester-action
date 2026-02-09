@@ -6,7 +6,7 @@ Please see [https://www.contributor-covenant.org/version/2/1/code_of_conduct/](h
 
 ## Reporting
 
-If you experience or witness unacceptable behavior, please report it by contacting the project team at dev@waftester.com.
+If you experience or witness unacceptable behavior, please report it by contacting the project team at <dev@waftester.com>.
 
 All reports will be reviewed and investigated promptly and fairly.
 

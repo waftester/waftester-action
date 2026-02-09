@@ -291,6 +291,7 @@ When `upload-sarif` is `true` (the default) and `format` is
 [`github/codeql-action/upload-sarif@v3`](https://github.com/github/codeql-action).
 
 Results appear under **Security → Code scanning alerts** with:
+
 - Rule IDs (e.g., `sqli-SQLI003`, `xss-XSS001`)
 - CWE references (18 mapped categories)
 - Severity levels (error, warning, note)
@@ -349,6 +350,7 @@ GHAS license — without it, SARIF upload silently fails.
 ```
 
 Results are still available through:
+
 - **Job Summary** — always written to the workflow run page
   (visible under Actions → run → Summary)
 - **SARIF artifact** — download the raw file for local review
