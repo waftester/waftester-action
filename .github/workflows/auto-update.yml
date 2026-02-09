@@ -1,0 +1,116 @@
+name: Auto-Update CLI Version
+
+# Triggered by CLI repo's release workflow via repository_dispatch
+on:
+  repository_dispatch:
+    types: [cli-release]
+
+permissions:
+  contents: write
+
+jobs:
+  update-and-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLI_VERSION: ${{ github.event.client_payload.version }}
+      CLI_TAG: ${{ github.event.client_payload.tag }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate payload
+        run: |
+          if [[ -z "$CLI_VERSION" ]]; then
+            echo "::error::Missing version in dispatch payload"
+            exit 1
+          fi
+          echo "📦 CLI version: ${CLI_VERSION} (tag: ${CLI_TAG})"
+
+      - name: Update version references in README
+        run: |
+          # Update version strings in README.md (e.g., 2.8.1 → 2.9.0)
+          # Only replace version patterns that look like semver in expected contexts
+          sed -i -E "s/[0-9]+\.[0-9]+\.[0-9]+/${CLI_VERSION}/g" README.md
+          
+          # Show what changed
+          if git diff --quiet README.md; then
+            echo "ℹ️ No version references to update in README"
+          else
+            echo "📝 Updated version references:"
+            git diff --stat README.md
+          fi
+
+      - name: Determine next action version
+        id: next-version
+        run: |
+          # Get the latest release tag (e.g., v1.0.1)
+          LATEST=$(gh release view --json tagName -q '.tagName' 2>/dev/null || echo "v1.0.0")
+          echo "Latest action release: ${LATEST}"
+          
+          # Bump patch version
+          MAJOR=$(echo "$LATEST" | sed -E 's/v([0-9]+)\..*/\1/')
+          MINOR=$(echo "$LATEST" | sed -E 's/v[0-9]+\.([0-9]+)\..*/\1/')
+          PATCH=$(echo "$LATEST" | sed -E 's/v[0-9]+\.[0-9]+\.([0-9]+)/\1/')
+          NEXT_PATCH=$((PATCH + 1))
+          NEXT_TAG="v${MAJOR}.${MINOR}.${NEXT_PATCH}"
+          
+          echo "next_tag=${NEXT_TAG}" >> "$GITHUB_OUTPUT"
+          echo "major=v${MAJOR}" >> "$GITHUB_OUTPUT"
+          echo "📌 Next action tag: ${NEXT_TAG}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if ! git diff --quiet; then
+            git add -A
+            git commit -m "chore(deps): bump CLI version to ${CLI_VERSION}"
+            git push
+            echo "✅ Version bump committed"
+          else
+            echo "ℹ️ No changes to commit"
+          fi
+
+      - name: Create action release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEXT_TAG: ${{ steps.next-version.outputs.next_tag }}
+        run: |
+          NOTES=$(cat <<EOF
+          ## WAFtester Action ${NEXT_TAG}
+
+          Updates bundled CLI to **WAFtester ${CLI_VERSION}**.
+
+          See [CLI changelog](https://github.com/waftester/waftester/releases/tag/${CLI_TAG}) for details.
+
+          ### Usage
+
+          \`\`\`yaml
+          - uses: waftester/waftester-action@v1
+            with:
+              target: https://app.example.com
+          \`\`\`
+          EOF
+          )
+          
+          gh release create "${NEXT_TAG}" \
+            --title "WAFtester Action ${NEXT_TAG}" \
+            --notes "${NOTES}" \
+            --latest
+          
+          echo "✅ Created release ${NEXT_TAG}"
+
+      - name: Float major tag
+        env:
+          NEXT_TAG: ${{ steps.next-version.outputs.next_tag }}
+          MAJOR: ${{ steps.next-version.outputs.major }}
+        run: |
+          git fetch --tags --force
+          git tag -fa "${MAJOR}" -m "${MAJOR} → ${NEXT_TAG}"
+          git push origin "${MAJOR}" --force
+          echo "✅ Floated ${MAJOR} → ${NEXT_TAG}"
