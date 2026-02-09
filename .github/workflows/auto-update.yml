@@ -28,24 +28,6 @@ jobs:
           fi
           echo "📦 CLI version: ${CLI_VERSION} (tag: ${CLI_TAG})"
 
-      - name: Update version references in README
-        run: |
-          # 1. CLI version badge (marked with <!-- x-cli-version -->)
-          sed -i -E "s|CLI-v[0-9]+\.[0-9]+\.[0-9]+-|CLI-v${CLI_VERSION}-|g" README.md
-          sed -i -E "s|releases/tag/v[0-9]+\.[0-9]+\.[0-9]+\)(.* x-cli-version)|releases/tag/v${CLI_VERSION})\1|g" README.md
-          
-          # 2. Version pinning examples in docs
-          sed -i -E "s|(version: ')[0-9]+\.[0-9]+\.[0-9]+(')|\1${CLI_VERSION}\2|g" README.md
-          sed -i -E "s|(Installed WAFtester version \| \`)[0-9]+\.[0-9]+\.[0-9]+(\`)|\1${CLI_VERSION}\2|g" README.md
-          
-          # Show what changed
-          if git diff --quiet README.md; then
-            echo "ℹ️ No version references to update in README"
-          else
-            echo "📝 Updated version references:"
-            git diff README.md
-          fi
-
       - name: Determine next action version
         id: next-version
         run: |
@@ -65,6 +47,32 @@ jobs:
           echo "📌 Next action tag: ${NEXT_TAG}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update version references in README
+        env:
+          NEXT_ACTION: ${{ steps.next-version.outputs.next_tag }}
+        run: |
+          # 1. CLI version badge (marked with <!-- x-cli-version -->)
+          sed -i -E "s|CLI-v[0-9]+\.[0-9]+\.[0-9]+-|CLI-v${CLI_VERSION}-|g" README.md
+          sed -i -E "s|releases/tag/v[0-9]+\.[0-9]+\.[0-9]+\)(.* x-cli-version)|releases/tag/v${CLI_VERSION})\1|g" README.md
+          
+          # 2. CLI version in pinning example (version: 'x.y.z')
+          sed -i -E "s|(version: ')[0-9]+\.[0-9]+\.[0-9]+(')|\1${CLI_VERSION}\2|g" README.md
+          
+          # 3. CLI version in outputs table
+          sed -i -E "s|(Installed WAFtester version \| \`)[0-9]+\.[0-9]+\.[0-9]+(\`)|\1${CLI_VERSION}\2|g" README.md
+          
+          # 4. Action version in pinning example (uses: ...@vX.Y.Z and git rev-parse)
+          sed -i -E "s|(waftester-action@v)[0-9]+\.[0-9]+\.[0-9]+|\1${NEXT_ACTION#v}|g" README.md
+          sed -i -E "s|(git rev-parse v)[0-9]+\.[0-9]+\.[0-9]+|\1${NEXT_ACTION#v}|g" README.md
+          
+          # Show what changed
+          if git diff --quiet README.md; then
+            echo "ℹ️ No version references to update in README"
+          else
+            echo "📝 Updated version references:"
+            git diff README.md
+          fi
 
       - name: Commit version bump
         run: |
