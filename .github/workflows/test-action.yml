@@ -18,7 +18,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./
         id: waf
         with:
@@ -38,7 +38,7 @@ jobs:
   test-sarif:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./
         id: waf
         with:
@@ -61,7 +61,7 @@ jobs:
   test-version-pin:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./
         id: waf
         with:
@@ -81,7 +81,7 @@ jobs:
   test-exit-codes:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       # Test 1: fail-on-bypass=false should pass even with bypasses
       - uses: ./
         id: pass
@@ -100,7 +100,7 @@ jobs:
   test-invalid-inputs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       # Invalid version should fail install
       - uses: ./
         id: bad-version
@@ -120,7 +120,7 @@ jobs:
   test-custom:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./
         id: waf
         with:
