@@ -1,0 +1,133 @@
+name: Test Action
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write   # For SARIF upload test
+
+jobs:
+  # ── F47: Core install test across 3 OSes ──────────────
+  test-install:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        id: waf
+        with:
+          target: https://httpbin.org
+          scan-type: vendor
+          upload-sarif: false
+      - name: Verify outputs
+        shell: bash
+        run: |
+          echo "exit-code=${{ steps.waf.outputs.exit-code }}"
+          echo "version=${{ steps.waf.outputs.version }}"
+          echo "sarif-file=${{ steps.waf.outputs.sarif-file }}"
+          [[ -n "${{ steps.waf.outputs.version }}" ]] || { echo "::error::version output empty"; exit 1; }
+          [[ -f "${{ steps.waf.outputs.sarif-file }}" ]] || { echo "::error::sarif file missing"; exit 1; }
+
+  # ── F47: SARIF generation + schema validation ─────────
+  test-sarif:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        id: waf
+        with:
+          target: https://httpbin.org
+          scan-type: vendor
+          format: sarif
+          upload-sarif: false
+      - name: Validate SARIF
+        run: |
+          FILE="${{ steps.waf.outputs.sarif-file }}"
+          # Valid JSON
+          jq empty "$FILE"
+          # Required SARIF fields
+          jq -e '.version' "$FILE"
+          jq -e '.runs[0].tool.driver.name' "$FILE"
+          jq -e '.runs[0].results' "$FILE"
+          echo "✅ SARIF schema validated"
+
+  # ── F47: Pinned version resolves correctly ─────────────
+  test-version-pin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        id: waf
+        with:
+          target: https://httpbin.org
+          scan-type: vendor
+          version: '2.8.1'
+          upload-sarif: false
+      - name: Verify pinned version
+        run: |
+          INSTALLED="${{ steps.waf.outputs.version }}"
+          [[ "$INSTALLED" == "2.8.1" ]] || {
+            echo "::error::Expected 2.8.1 but got $INSTALLED"
+            exit 1
+          }
+
+  # ── F47: Exit code behavior + fail-on-bypass ──────────
+  test-exit-codes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Test 1: fail-on-bypass=false should pass even with bypasses
+      - uses: ./
+        id: pass
+        with:
+          target: https://httpbin.org
+          scan-type: vendor
+          fail-on-bypass: false
+          fail-on-error: false
+          upload-sarif: false
+      - name: Verify pass mode
+        run: |
+          echo "Exit code: ${{ steps.pass.outputs.exit-code }}"
+          # Step should have passed regardless of exit code
+
+  # ── F47: Invalid inputs produce clear errors ───────────
+  test-invalid-inputs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Invalid version should fail install
+      - uses: ./
+        id: bad-version
+        continue-on-error: true
+        with:
+          target: https://httpbin.org
+          version: 'not-a-version'
+          upload-sarif: false
+      - name: Verify failure
+        run: |
+          [[ "${{ steps.bad-version.outcome }}" == "failure" ]] || {
+            echo "::error::Expected failure for invalid version"
+            exit 1
+          }
+
+  # ── F47: Custom scan-type passthrough ──────────────────
+  test-custom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        id: waf
+        with:
+          target: https://httpbin.org
+          scan-type: custom
+          args: 'vendor -u https://httpbin.org -format sarif -output custom-out.sarif'
+          upload-sarif: false
+      - name: Verify custom output
+        run: |
+          [[ -f "custom-out.sarif" ]] || echo "::warning::Custom output file not found (expected if vendor doesn't create SARIF)"

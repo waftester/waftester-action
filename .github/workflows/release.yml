@@ -1,0 +1,53 @@
+name: Release — Float Major Tag
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  float-major-tag:
+    # F56: Skip pre-release tags — don't float v1 to unstable
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract major version
+        id: version
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          MAJOR="${TAG%%.*}"
+          echo "major=${MAJOR}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Floating ${MAJOR} → ${TAG}"
+
+      - name: Update floating tag
+        env:
+          MAJOR: ${{ steps.version.outputs.major }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -fa "${MAJOR}" -m "${MAJOR} → ${TAG}"
+          git push origin "${MAJOR}" --force
+
+  # ── F45: Smoke test before declaring success ───────────
+  smoke-test:
+    needs: float-major-tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test floating tag resolves
+        run: |
+          MAJOR="${{ github.event.release.tag_name }}"
+          MAJOR="${MAJOR%%.*}"
+          # Verify the floating tag exists on the remote
+          git ls-remote --tags \
+            "https://github.com/${{ github.repository }}" \
+            "refs/tags/${MAJOR}" | grep -q "${MAJOR}" || {
+              echo "::error::Floating tag ${MAJOR} not found on remote"
+              exit 1
+            }
+          echo "✅ Floating tag ${MAJOR} verified"
