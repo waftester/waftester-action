@@ -8,7 +8,20 @@ The format is based on
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] — 2026-XX-XX
+## [1.0.2] — 2026-02-09
+
+### Changed
+
+- Bumped bundled CLI to WAFtester 2.8.2
+
+## [1.0.1] — 2026-02-09
+
+### Fixed
+
+- Restored real CORS scan in test-sarif CI job
+- Fixed vendor subcommand flag compatibility
+
+## [1.0.0] — 2026-02-09
 
 ### Added
 
@@ -24,4 +37,6 @@ and this project adheres to
 - 9 scan types mapping to WAFtester CLI subcommands
 - 6 example workflows included
 
+[1.0.2]: https://github.com/waftester/waftester-action/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/waftester/waftester-action/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/waftester/waftester-action/releases/tag/v1.0.0

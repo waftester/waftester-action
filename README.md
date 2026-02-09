@@ -289,7 +289,7 @@ By default, `fail-on-bypass` is `false` (informational) and
 When `upload-sarif` is `true` (the default) and `format` is
 `sarif`, the action automatically uploads results to
 **GitHub Code Scanning** using
-[`github/codeql-action/upload-sarif@v3`](https://github.com/github/codeql-action).
+[`github/codeql-action/upload-sarif@v4`](https://github.com/github/codeql-action).
 
 Results appear under **Security → Code scanning alerts** with:
 

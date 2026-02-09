@@ -111,12 +111,11 @@ if [[ "${INPUT_SCAN_TYPE}" != "custom" ]]; then
   fi
 fi
 
-# Extra arguments (word-split intentionally)
+# Extra arguments — use eval to preserve quoting (e.g., -H "Bearer ...")
 if [[ -n "${INPUT_ARGS}" ]]; then
-  # Disable glob expansion to prevent * or ? in args from expanding to filenames
+  # eval handles quoted strings properly; set -f prevents glob expansion
   set -f
-  # shellcheck disable=SC2206
-  CMD+=(${INPUT_ARGS})
+  eval "CMD+=(${INPUT_ARGS})"
   set +f
 fi
 
@@ -206,8 +205,11 @@ fi
   echo "summary=${SUMMARY}"
 } >> "${GITHUB_OUTPUT}"
 
+# Always set sarif-file output (empty if file wasn't created)
 if [[ -f "${INPUT_OUTPUT}" ]]; then
   echo "sarif-file=${INPUT_OUTPUT}" >> "${GITHUB_OUTPUT}"
+else
+  echo "sarif-file=" >> "${GITHUB_OUTPUT}"
 fi
 
 # ============================================================================

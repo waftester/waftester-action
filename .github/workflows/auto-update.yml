@@ -26,6 +26,11 @@ jobs:
             echo "::error::Missing version in dispatch payload"
             exit 1
           fi
+          if [[ -z "$CLI_TAG" ]]; then
+            CLI_TAG="v${CLI_VERSION}"
+            echo "CLI_TAG=${CLI_TAG}" >> "$GITHUB_ENV"
+            echo "::notice::CLI_TAG not provided, defaulting to ${CLI_TAG}"
+          fi
           echo "📦 CLI version: ${CLI_VERSION} (tag: ${CLI_TAG})"
 
       - name: Determine next action version
@@ -80,7 +85,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           if ! git diff --quiet; then
-            git add -A
+            git add README.md CHANGELOG.md
             git commit -m "chore(deps): bump CLI version to ${CLI_VERSION}"
             git push
             echo "✅ Version bump committed"
@@ -93,8 +98,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEXT_TAG: ${{ steps.next-version.outputs.next_tag }}
         run: |
-          NOTES=$(cat <<EOF
-          ## WAFtester Action ${NEXT_TAG}
+          NOTES="## WAFtester Action ${NEXT_TAG}
 
           Updates bundled CLI to **WAFtester ${CLI_VERSION}**.
 
@@ -102,27 +106,19 @@ jobs:
 
           ### Usage
 
-          \`\`\`yaml
           - uses: waftester/waftester-action@v1
             with:
-              target: https://app.example.com
-          \`\`\`
-          EOF
-          )
-          
+              target: https://app.example.com"
+
+          # Remove leading whitespace from indented heredoc lines
+          NOTES=$(echo "$NOTES" | sed 's/^          //')
+
           gh release create "${NEXT_TAG}" \
             --title "WAFtester Action ${NEXT_TAG}" \
             --notes "${NOTES}" \
             --latest
-          
+
           echo "✅ Created release ${NEXT_TAG}"
 
-      - name: Float major tag
-        env:
-          NEXT_TAG: ${{ steps.next-version.outputs.next_tag }}
-          MAJOR: ${{ steps.next-version.outputs.major }}
-        run: |
-          git fetch --tags --force
-          git tag -fa "${MAJOR}" -m "${MAJOR} → ${NEXT_TAG}"
-          git push origin "${MAJOR}" --force
-          echo "✅ Floated ${MAJOR} → ${NEXT_TAG}"
+      # Note: v1 tag floating is handled by release.yml (on: release: published)
+      # No need to duplicate it here

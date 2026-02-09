@@ -84,13 +84,13 @@ jobs:
         with:
           target: https://httpbin.org
           scan-type: vendor
-          version: '2.8.1'
+          version: '2.8.2'
           upload-sarif: false
       - name: Verify pinned version
         run: |
           INSTALLED="${{ steps.waf.outputs.version }}"
-          [[ "$INSTALLED" == "2.8.1" ]] || {
-            echo "::error::Expected 2.8.1 but got $INSTALLED"
+          [[ "$INSTALLED" == "2.8.2" ]] || {
+            echo "::error::Expected 2.8.2 but got $INSTALLED"
             exit 1
           }
 
