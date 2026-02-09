@@ -4,6 +4,7 @@ Test, fingerprint, and bypass Web Application Firewalls
 directly in your GitHub Actions workflows.
 
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-WAFtester-blue?logo=github)](https://github.com/marketplace/actions/waftester-waf-security-testing)
+[![CLI Version](https://img.shields.io/badge/CLI-v2.8.2-00ADD8?logo=go&logoColor=white)](https://github.com/waftester/waftester/releases/tag/v2.8.2) <!-- x-cli-version -->
 [![License](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](LICENSE)
 [![CI](https://github.com/waftester/waftester-action/actions/workflows/test-action.yml/badge.svg)](https://github.com/waftester/waftester-action/actions/workflows/test-action.yml)
 

@@ -30,16 +30,20 @@ jobs:
 
       - name: Update version references in README
         run: |
-          # Update version strings in README.md (e.g., 2.8.1 → 2.9.0)
-          # Only replace version patterns that look like semver in expected contexts
-          sed -i -E "s/[0-9]+\.[0-9]+\.[0-9]+/${CLI_VERSION}/g" README.md
+          # 1. CLI version badge (marked with <!-- x-cli-version -->)
+          sed -i -E "s|CLI-v[0-9]+\.[0-9]+\.[0-9]+-|CLI-v${CLI_VERSION}-|g" README.md
+          sed -i -E "s|releases/tag/v[0-9]+\.[0-9]+\.[0-9]+\)(.* x-cli-version)|releases/tag/v${CLI_VERSION})\1|g" README.md
+          
+          # 2. Version pinning examples in docs
+          sed -i -E "s|(version: ')[0-9]+\.[0-9]+\.[0-9]+(')|\1${CLI_VERSION}\2|g" README.md
+          sed -i -E "s|(Installed WAFtester version \| \`)[0-9]+\.[0-9]+\.[0-9]+(\`)|\1${CLI_VERSION}\2|g" README.md
           
           # Show what changed
           if git diff --quiet README.md; then
             echo "ℹ️ No version references to update in README"
           else
             echo "📝 Updated version references:"
-            git diff --stat README.md
+            git diff README.md
           fi
 
       - name: Determine next action version
