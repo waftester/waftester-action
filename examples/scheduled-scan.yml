@@ -1,0 +1,34 @@
+# Scheduled Weekly WAF Audit
+# Runs every Monday at 06:00 UTC against multiple targets.
+# Each target gets its own SARIF category for grouped alerts.
+name: Weekly WAF Audit
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:   # Allow manual trigger
+
+permissions:
+  security-events: write
+
+jobs:
+  audit:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: https://app.example.com
+            name: app
+          - target: https://api.example.com
+            name: api
+          - target: https://admin.example.com
+            name: admin
+    runs-on: ubuntu-latest
+    name: Audit ${{ matrix.name }}
+    steps:
+      - uses: waftester/waftester-action@v1
+        with:
+          target: ${{ matrix.target }}
+          scan-type: assess
+          sarif-category: 'waf-${{ matrix.name }}'
+          args: '-fp'

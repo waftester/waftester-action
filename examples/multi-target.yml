@@ -1,0 +1,43 @@
+# Multi-Target Scan with Artifact Upload
+# Triggered manually. Select the environment to scan.
+# Uploads the SARIF file as a workflow artifact.
+name: WAF Multi-Target
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to scan'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  security-events: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    env:
+      TARGET: ${{ github.event.inputs.environment == 'production'
+        && 'https://prod.example.com'
+        || 'https://staging.example.com' }}
+    steps:
+      - uses: waftester/waftester-action@v1
+        id: waf
+        with:
+          target: ${{ env.TARGET }}
+          scan-type: auto
+          output: 'waf-${{ github.event.inputs.environment }}.sarif'
+          sarif-category: 'waf-${{ github.event.inputs.environment }}'
+          fail-on-bypass: ${{ github.event.inputs.environment == 'production' }}
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: waf-results-${{ github.event.inputs.environment }}
+          path: 'waf-${{ github.event.inputs.environment }}.sarif'
+          retention-days: 30

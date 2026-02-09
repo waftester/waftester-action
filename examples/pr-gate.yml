@@ -1,0 +1,64 @@
+# PR Gate with Comment
+# Scans the staging environment, posts a summary comment
+# on the pull request, and fails if bypasses are found.
+name: WAF PR Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  security-events: write
+  pull-requests: write
+
+jobs:
+  waf-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: waftester/waftester-action@v1
+        id: waf
+        with:
+          target: https://staging.example.com
+          scan-type: auto
+          fail-on-bypass: true
+
+      - name: Comment on PR
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          WAF_BYPASS_COUNT: ${{ steps.waf.outputs.bypass-count }}
+          WAF_EXIT_CODE: ${{ steps.waf.outputs.exit-code }}
+          WAF_VERSION: ${{ steps.waf.outputs.version }}
+          WAF_SUMMARY: ${{ steps.waf.outputs.summary }}
+        with:
+          # SECURITY: Pass outputs via env vars to prevent expression injection.
+          # Never use ${{ }} interpolation with untrusted step outputs in scripts.
+          script: |
+            const bypasses = process.env.WAF_BYPASS_COUNT;
+            const exit = process.env.WAF_EXIT_CODE;
+            const version = process.env.WAF_VERSION;
+            const summary = process.env.WAF_SUMMARY;
+
+            const icon = bypasses === '0' ? ':white_check_mark:' : ':red_circle:';
+            const title = bypasses === '0' ? 'WAF Scan Passed' : 'WAF Bypasses Detected';
+
+            const body = [
+              `## ${icon} ${title}`,
+              '',
+              '| Metric | Value |',
+              '|--------|-------|',
+              `| Bypasses | **${bypasses}** |`,
+              `| Exit Code | \`${exit}\` |`,
+              `| WAFtester | v${version} |`,
+              '',
+              summary ? `<details><summary>Details</summary>\n\n${summary}\n\n</details>` : '',
+              '',
+              `_Scanned by [WAFtester Action](https://github.com/marketplace/actions/waftester-waf-security-testing)_`
+            ].join('\n');
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });

@@ -1,0 +1,33 @@
+# Full Autonomous Assessment
+# Runs vendor detection, selects optimal bypass techniques,
+# tests 2,800+ payloads, and fails the workflow on bypasses.
+name: WAF Assessment
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  security-events: write
+
+jobs:
+  assess:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: waftester/waftester-action@v1
+        id: waf
+        with:
+          target: https://app.example.com
+          scan-type: auto
+          fail-on-bypass: true
+          args: '--smart --tamper-auto'
+
+      - name: Check results
+        if: always()
+        run: |
+          echo "Exit code: ${{ steps.waf.outputs.exit-code }}"
+          echo "Bypasses:  ${{ steps.waf.outputs.bypass-count }}"
+          echo "Version:   ${{ steps.waf.outputs.version }}"
+          echo "Summary:   ${{ steps.waf.outputs.summary }}"

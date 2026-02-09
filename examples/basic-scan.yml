@@ -1,0 +1,17 @@
+# Basic WAF Scan
+# Runs on every push and pull request.
+# Uploads SARIF results to Security → Code scanning.
+name: WAF Scan
+
+on: [push, pull_request]
+
+permissions:
+  security-events: write
+
+jobs:
+  waf-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: waftester/waftester-action@v1
+        with:
+          target: https://app.example.com

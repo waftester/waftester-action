@@ -1,0 +1,22 @@
+# Informational Scan (Never Fails)
+# Useful for monitoring WAF health without blocking deployments.
+# Results still appear in Security → Code scanning.
+name: WAF Monitor
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  security-events: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: waftester/waftester-action@v1
+        with:
+          target: https://app.example.com
+          scan-type: scan
+          fail-on-bypass: false
+          fail-on-error: false
