@@ -22,13 +22,13 @@ set -uo pipefail
 # Exit code constants (must match pkg/output/exitcode/exitcode.go)
 # ============================================================================
 
-readonly EXIT_SUCCESS=0
-readonly EXIT_BYPASSES_DETECTED=1
-readonly EXIT_TOO_MANY_ERRORS=2
-readonly EXIT_INVALID_CONFIG=3
-readonly EXIT_TARGET_UNREACHABLE=4
-readonly EXIT_INTERRUPTED=5
-readonly EXIT_LICENSE_ERROR=6
+export EXIT_SUCCESS=0
+export EXIT_BYPASSES_DETECTED=1
+export EXIT_TOO_MANY_ERRORS=2
+export EXIT_INVALID_CONFIG=3
+export EXIT_TARGET_UNREACHABLE=4
+export EXIT_INTERRUPTED=5
+export EXIT_LICENSE_ERROR=6
 
 # Human-readable exit code descriptions
 exit_code_description() {

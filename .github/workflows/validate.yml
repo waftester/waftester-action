@@ -15,9 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: actionlint
-        uses: rhysd/actionlint-action@v1
-        with:
-          flags: '-color'
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
 
   # ── action-yml-schema — validates action.yml against official schema ──
   action-schema:
