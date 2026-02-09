@@ -18,7 +18,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./
         id: waf
         with:
@@ -27,10 +27,13 @@ jobs:
           upload-sarif: false
       - name: Verify outputs
         shell: bash
+        env:
+          EXIT_CODE: ${{ steps.waf.outputs.exit-code }}
+          VERSION: ${{ steps.waf.outputs.version }}
         run: |
-          echo "exit-code=${{ steps.waf.outputs.exit-code }}"
-          echo "version=${{ steps.waf.outputs.version }}"
-          [[ -n "${{ steps.waf.outputs.version }}" ]] || { echo "::error::version output empty"; exit 1; }
+          echo "exit-code=${EXIT_CODE}"
+          echo "version=${VERSION}"
+          [[ -n "${VERSION}" ]] || { echo "::error::version output empty"; exit 1; }
 
   # ── F47: SARIF generation + validation ──────────────────
   # Validates real vulnerability scanning with SARIF output format.
@@ -41,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./
         id: waf
         with:
@@ -53,23 +56,36 @@ jobs:
           fail-on-error: false
           upload-sarif: false
       - name: Validate outputs
+        env:
+          EXIT_CODE: ${{ steps.waf.outputs.exit-code }}
+          VERSION: ${{ steps.waf.outputs.version }}
+          BYPASS_COUNT: ${{ steps.waf.outputs.bypass-count }}
+          SUMMARY: ${{ steps.waf.outputs.summary }}
         run: |
-          echo "exit-code=${{ steps.waf.outputs.exit-code }}"
-          echo "version=${{ steps.waf.outputs.version }}"
-          echo "bypass-count=${{ steps.waf.outputs.bypass-count }}"
-          echo "summary=${{ steps.waf.outputs.summary }}"
+          echo "exit-code=${EXIT_CODE}"
+          echo "version=${VERSION}"
+          echo "bypass-count=${BYPASS_COUNT}"
+          echo "summary=${SUMMARY}"
 
           # Verify key outputs are set
-          [[ -n "${{ steps.waf.outputs.exit-code }}" ]] || { echo "::error::exit-code output not set"; exit 1; }
-          [[ -n "${{ steps.waf.outputs.version }}" ]]   || { echo "::error::version output not set"; exit 1; }
-          [[ -n "${{ steps.waf.outputs.summary }}" ]]   || { echo "::error::summary output not set"; exit 1; }
+          [[ -n "${EXIT_CODE}" ]] || { echo "::error::exit-code output not set"; exit 1; }
+          [[ -n "${VERSION}" ]]   || { echo "::error::version output not set"; exit 1; }
+          [[ -n "${SUMMARY}" ]]   || { echo "::error::summary output not set"; exit 1; }
 
-          # Verify output file was generated
+          # Verify output file was generated and valid
           if [[ -f "waftester-results.sarif" ]]; then
-            echo "✅ SARIF output file generated"
-            echo "File size: $(wc -c < waftester-results.sarif) bytes"
+            SIZE=$(wc -c < waftester-results.sarif)
+            echo "File size: ${SIZE} bytes"
+            if [[ ${SIZE} -lt 50 ]]; then
+              echo "::error::SARIF file is suspiciously small (${SIZE} bytes)"
+              exit 1
+            fi
+            # Validate it's parseable JSON
+            jq empty waftester-results.sarif || { echo "::error::SARIF file is not valid JSON"; exit 1; }
+            echo "✅ SARIF output file generated and valid"
           else
-            echo "⚠️ No SARIF file (expected for scan output)"
+            echo "::error::No SARIF file generated"
+            exit 1
           fi
 
           echo "✅ All outputs validated"
@@ -78,7 +94,7 @@ jobs:
   test-version-pin:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./
         id: waf
         with:
@@ -87,10 +103,11 @@ jobs:
           version: '2.8.2'
           upload-sarif: false
       - name: Verify pinned version
+        env:
+          INSTALLED: ${{ steps.waf.outputs.version }}
         run: |
-          INSTALLED="${{ steps.waf.outputs.version }}"
-          [[ "$INSTALLED" == "2.8.2" ]] || {
-            echo "::error::Expected 2.8.2 but got $INSTALLED"
+          [[ "${INSTALLED}" == "2.8.2" ]] || {
+            echo "::error::Expected 2.8.2 but got ${INSTALLED}"
             exit 1
           }
 
@@ -98,7 +115,7 @@ jobs:
   test-exit-codes:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       # Test 1: fail-on-bypass=false should pass even with bypasses
       - uses: ./
         id: pass
@@ -109,15 +126,17 @@ jobs:
           fail-on-error: false
           upload-sarif: false
       - name: Verify pass mode
+        env:
+          EXIT_CODE: ${{ steps.pass.outputs.exit-code }}
         run: |
-          echo "Exit code: ${{ steps.pass.outputs.exit-code }}"
+          echo "Exit code: ${EXIT_CODE}"
           # Step should have passed regardless of exit code
 
   # ── F47: Invalid inputs produce clear errors ───────────
   test-invalid-inputs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       # Invalid version should fail install
       - uses: ./
         id: bad-version
@@ -127,8 +146,10 @@ jobs:
           version: 'not-a-version'
           upload-sarif: false
       - name: Verify failure
+        env:
+          OUTCOME: ${{ steps.bad-version.outcome }}
         run: |
-          [[ "${{ steps.bad-version.outcome }}" == "failure" ]] || {
+          [[ "${OUTCOME}" == "failure" ]] || {
             echo "::error::Expected failure for invalid version"
             exit 1
           }
@@ -137,7 +158,7 @@ jobs:
   test-custom:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./
         id: waf
         with:
@@ -146,6 +167,8 @@ jobs:
           args: 'vendor -u https://httpbin.org'
           upload-sarif: false
       - name: Verify custom ran
+        env:
+          EXIT_CODE: ${{ steps.waf.outputs.exit-code }}
         run: |
-          echo "Exit code: ${{ steps.waf.outputs.exit-code }}"
+          echo "Exit code: ${EXIT_CODE}"
           echo "Custom scan-type passthrough verified"

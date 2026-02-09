@@ -8,6 +8,32 @@ The format is based on
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] — 2026-02-10
+
+### Security
+
+- SHA-pin all third-party GitHub Actions across all workflows
+- Migrate `${{ }}` expressions to `env:` blocks to prevent injection
+- Replace `eval` with `xargs` for safe argument parsing in entrypoint
+- Use PID-unique heredoc delimiters to prevent output injection
+- Sanitize Markdown table output against content injection
+- Add GITHUB_TOKEN anti-recursion guard in auto-update workflow
+- Add concurrency groups to prevent parallel release races
+
+### Fixed
+
+- Fix SC2001 shellcheck violation in auto-update release notes (`echo|sed` → `printf`)
+- Add `--retry-all-errors` to curl downloads for transient CDN failures
+- Fix custom scan-type passthrough with explicit notice
+- Fix process substitution in strict bash (`set -euo pipefail`)
+- Add SARIF file existence validation before upload
+
+### Changed
+
+- Bumped bundled CLI to WAFtester 2.8.3
+- Inline v1 tag float into release workflow (eliminate separate workflow)
+- Add semver validation for version tags before release
+
 ## [1.0.2] — 2026-02-09
 
 ### Changed
@@ -37,6 +63,7 @@ and this project adheres to
 - 9 scan types mapping to WAFtester CLI subcommands
 - 6 example workflows included
 
+[1.0.3]: https://github.com/waftester/waftester-action/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/waftester/waftester-action/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/waftester/waftester-action/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/waftester/waftester-action/releases/tag/v1.0.0

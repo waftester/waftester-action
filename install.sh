@@ -125,6 +125,11 @@ if [[ "${VERSION}" == "latest" || -z "${VERSION}" ]]; then
   HTTP_STATUS=$(echo "${API_RESPONSE}" | tail -1)
   LATEST_JSON=$(echo "${API_RESPONSE}" | sed '$d')
 
+  # Detect total network failure (curl failed before getting any HTTP status)
+  if [[ -z "${HTTP_STATUS}" || "${HTTP_STATUS}" == "000" ]]; then
+    log_error "GitHub API unreachable (HTTP ${HTTP_STATUS:-none}). Check network connectivity and DNS."
+  fi
+
   if [[ "${HTTP_STATUS}" != "200" ]]; then
     case "${HTTP_STATUS}" in
       403) log_error "GitHub API rate limited (HTTP 403). Set GITHUB_TOKEN or pin a version: version: '2.8.2'" ;;
@@ -165,13 +170,13 @@ DOWNLOAD_URL="${RELEASE_BASE}/${ARCHIVE_NAME}"
 CHECKSUMS_URL="${RELEASE_BASE}/checksums.txt"
 
 log_info "Downloading ${ARCHIVE_NAME}..."
-curl -fsSL --retry 3 --retry-delay 2 -o "${INSTALL_DIR}/${ARCHIVE_NAME}" "${DOWNLOAD_URL}" \
+curl -fsSL --retry 3 --retry-delay 2 --retry-all-errors -o "${INSTALL_DIR}/${ARCHIVE_NAME}" "${DOWNLOAD_URL}" \
   || log_error "Failed to download ${DOWNLOAD_URL}
   Verify that version ${TAG} exists: https://github.com/waftester/waftester/releases/tag/${TAG}
   Available releases: https://github.com/waftester/waftester/releases"
 
 log_info "Downloading checksums.txt..."
-curl -fsSL --retry 3 --retry-delay 2 -o "${INSTALL_DIR}/checksums.txt" "${CHECKSUMS_URL}" \
+curl -fsSL --retry 3 --retry-delay 2 --retry-all-errors -o "${INSTALL_DIR}/checksums.txt" "${CHECKSUMS_URL}" \
   || log_error "Failed to download checksums.txt from ${CHECKSUMS_URL}"
 
 # ============================================================================
@@ -182,7 +187,7 @@ log_info "Verifying SHA-256 checksum..."
 
 # Extract expected hash for our archive from checksums.txt
 # GoReleaser format: "<64-char-hex>  <filename>" (sha256sum standard, two-space separator)
-EXPECTED_HASH=$(grep "  ${ARCHIVE_NAME}$" "${INSTALL_DIR}/checksums.txt" | awk '{print $1}')
+EXPECTED_HASH=$(grep -F "  ${ARCHIVE_NAME}" "${INSTALL_DIR}/checksums.txt" | awk '{print $1}')
 
 if [[ -z "${EXPECTED_HASH}" ]]; then
   log_error "Archive '${ARCHIVE_NAME}' not found in checksums.txt.

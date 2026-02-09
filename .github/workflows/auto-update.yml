@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# Serialize — never run two auto-updates in parallel
+concurrency:
+  group: auto-update
+  cancel-in-progress: false
+
 jobs:
   update-and-release:
     runs-on: ubuntu-latest
@@ -16,7 +21,7 @@ jobs:
       CLI_VERSION: ${{ github.event.client_payload.version }}
       CLI_TAG: ${{ github.event.client_payload.tag }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
 
@@ -24,6 +29,11 @@ jobs:
         run: |
           if [[ -z "$CLI_VERSION" ]]; then
             echo "::error::Missing version in dispatch payload"
+            exit 1
+          fi
+          # Strict semver validation — reject anything that isn't X.Y.Z
+          if [[ ! "$CLI_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format: '$CLI_VERSION'. Expected: X.Y.Z (e.g., 2.8.2)"
             exit 1
           fi
           if [[ -z "$CLI_TAG" ]]; then
@@ -40,6 +50,12 @@ jobs:
           LATEST=$(gh release view --json tagName -q '.tagName' 2>/dev/null || echo "v1.0.0")
           echo "Latest action release: ${LATEST}"
           
+          # Validate tag is strict semver before parsing
+          if [[ ! "$LATEST" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Latest release tag '${LATEST}' is not semver (vX.Y.Z). Cannot auto-increment."
+            exit 1
+          fi
+
           # Bump patch version
           MAJOR=$(echo "$LATEST" | sed -E 's/v([0-9]+)\..*/\1/')
           MINOR=$(echo "$LATEST" | sed -E 's/v[0-9]+\.([0-9]+)\..*/\1/')
@@ -85,8 +101,12 @@ jobs:
         run: |
           DATE=$(date -u +%Y-%m-%d)
           ENTRY="## [${NEXT_ACTION}] - ${DATE}\n\n### Changed\n\n- Bump bundled CLI to WAFtester v${CLI_VERSION}\n"
-          # Insert after the first line (# Changelog header)
-          sed -i "0,/^## /{s|^## |${ENTRY}\n## |}" CHANGELOG.md
+          # Insert before the first ## header; if none exists, append to file
+          if grep -q '^## ' CHANGELOG.md; then
+            sed -i "0,/^## /{s|^## |${ENTRY}\n## |}" CHANGELOG.md
+          else
+            echo -e "${ENTRY}" >> CHANGELOG.md
+          fi
           echo "📝 Added CHANGELOG entry for ${NEXT_ACTION}"
 
       - name: Commit version bump
@@ -122,15 +142,28 @@ jobs:
               target: https://app.example.com
           \`\`\`"
 
-          # Remove leading whitespace from indented heredoc lines
-          NOTES=$(echo "$NOTES" | sed 's/^          //')
+          # YAML run: | block scalar already strips leading indentation,
+          # so NOTES content has no extra whitespace to remove.
+          printf '%s\n' "$NOTES" > /tmp/release_notes.md
 
           gh release create "${NEXT_TAG}" \
             --title "WAFtester Action ${NEXT_TAG}" \
-            --notes "${NOTES}" \
+            --notes-file /tmp/release_notes.md \
             --latest
 
           echo "✅ Created release ${NEXT_TAG}"
 
-      # Note: v1 tag floating is handled by release.yml (on: release: published)
-      # No need to duplicate it here
+      # Float the major version tag (e.g., v1 → v1.0.6) so users on @v1 get updates.
+      # This MUST be done here, not delegated to release.yml, because releases
+      # created with GITHUB_TOKEN do not trigger other workflows (GitHub's
+      # anti-recursion rule). See: https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
+      - name: Float major version tag
+        env:
+          NEXT_TAG: ${{ steps.next-version.outputs.next_tag }}
+          MAJOR: ${{ steps.next-version.outputs.major }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -fa "${MAJOR}" -m "${MAJOR} → ${NEXT_TAG}"
+          git push origin "${MAJOR}" --force
+          echo "✅ Floated ${MAJOR} → ${NEXT_TAG}"

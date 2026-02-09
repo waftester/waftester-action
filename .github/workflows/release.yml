@@ -12,14 +12,15 @@ jobs:
     if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
 
       - name: Extract major version
         id: version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
         run: |
-          TAG="${{ github.event.release.tag_name }}"
           MAJOR="${TAG%%.*}"
           echo "major=${MAJOR}" >> "$GITHUB_OUTPUT"
           echo "::notice::Floating ${MAJOR} → ${TAG}"
@@ -40,12 +41,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Test floating tag resolves
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          REPO_FULL_NAME: ${{ github.repository }}
         run: |
-          MAJOR="${{ github.event.release.tag_name }}"
+          MAJOR="${RELEASE_TAG}"
           MAJOR="${MAJOR%%.*}"
           # Verify the floating tag exists on the remote
           git ls-remote --tags \
-            "https://github.com/${{ github.repository }}" \
+            "https://github.com/${REPO_FULL_NAME}" \
             "refs/tags/${MAJOR}" | grep -q "${MAJOR}" || {
               echo "::error::Floating tag ${MAJOR} not found on remote"
               exit 1

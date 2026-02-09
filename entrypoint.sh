@@ -81,6 +81,7 @@ case "${INPUT_SCAN_TYPE}" in
   custom)
     # "custom" mode: INPUT_ARGS contains ALL arguments
     # Don't add subcommand, target, format, or output — user controls everything
+    echo "::notice::Custom scan-type: only 'args' input is used. Default 'format', 'output', and 'target' inputs are ignored for command construction. Results file '${INPUT_OUTPUT}' will only be checked if your command writes to it."
     ;;
   *)
     echo "::error::Unknown scan-type '${INPUT_SCAN_TYPE}'. Valid values: scan, auto, bypass, assess, vendor, discover, fuzz, nuclei, custom"
@@ -111,15 +112,23 @@ if [[ "${INPUT_SCAN_TYPE}" != "custom" ]]; then
   fi
 fi
 
-# Extra arguments — use eval to preserve quoting (e.g., -H "Bearer ...")
-# WARNING: eval executes shell syntax in INPUT_ARGS. This is safe because
-# INPUT_ARGS comes from workflow YAML (author-controlled), NOT from
+# Extra arguments — split on whitespace without executing shell syntax.
+# WARNING: INPUT_ARGS comes from workflow YAML (author-controlled), NOT from
 # untrusted input. Never pass user-controlled data (issue titles, PR
 # bodies, commit messages) into the args input without sanitization.
+# Simple quoting (e.g., -H "Bearer token") is supported via xargs parsing.
 if [[ -n "${INPUT_ARGS}" ]]; then
-  set -f
-  eval "CMD+=(${INPUT_ARGS})"
-  set +f
+  ARGS_PARSED=0
+  while IFS= read -r arg; do
+    [[ -n "${arg}" ]] && CMD+=("${arg}") && ARGS_PARSED=$((ARGS_PARSED + 1))
+  done < <(echo "${INPUT_ARGS}" | xargs -n1 printf '%s\n' 2>/tmp/waftester_xargs_err)
+  if [[ -s /tmp/waftester_xargs_err ]]; then
+    echo "::warning::Failed to parse 'args' input (malformed quoting?). xargs error: $(cat /tmp/waftester_xargs_err)"
+  fi
+  if [[ ${ARGS_PARSED} -eq 0 && -n "${INPUT_ARGS}" ]]; then
+    echo "::warning::No arguments parsed from 'args' input '${INPUT_ARGS}'. Check for unmatched quotes."
+  fi
+  rm -f /tmp/waftester_xargs_err
 fi
 
 # ============================================================================
@@ -202,15 +211,28 @@ fi
 # Set GitHub outputs
 # ============================================================================
 
+# Use single-line format for numeric values (injection-safe)
+echo "exit-code=${SCAN_EXIT_CODE}" >> "${GITHUB_OUTPUT}"
+echo "bypass-count=${BYPASS_COUNT}" >> "${GITHUB_OUTPUT}"
+
+# Use heredoc-delimited format for string values to prevent output injection
+# if SUMMARY or file paths contain newlines (e.g., from malicious target input).
+# Use a unique delimiter per output to prevent collision with user-controlled content.
+DELIM_SUMMARY="WAFTESTER_EOF_SUMMARY_$$"
+DELIM_SARIF="WAFTESTER_EOF_SARIF_$$"
 {
-  echo "exit-code=${SCAN_EXIT_CODE}"
-  echo "bypass-count=${BYPASS_COUNT}"
-  echo "summary=${SUMMARY}"
+  echo "summary<<${DELIM_SUMMARY}"
+  echo "${SUMMARY}"
+  echo "${DELIM_SUMMARY}"
 } >> "${GITHUB_OUTPUT}"
 
 # Always set sarif-file output (empty if file wasn't created)
 if [[ -f "${INPUT_OUTPUT}" ]]; then
-  echo "sarif-file=${INPUT_OUTPUT}" >> "${GITHUB_OUTPUT}"
+  {
+    echo "sarif-file<<${DELIM_SARIF}"
+    echo "${INPUT_OUTPUT}"
+    echo "${DELIM_SARIF}"
+  } >> "${GITHUB_OUTPUT}"
 else
   echo "sarif-file=" >> "${GITHUB_OUTPUT}"
 fi
@@ -252,11 +274,11 @@ fi
     echo "| Category | Count |"
     echo "|----------|-------|"
 
-    # Parse finding details into table rows
+    # Parse finding details into table rows (sanitize for Markdown safety)
     IFS=',' read -ra CATEGORIES <<< "${FINDING_DETAILS}"
     for cat in "${CATEGORIES[@]}"; do
-      cat_name=$(echo "${cat}" | sed 's/:.*//' | xargs)
-      cat_count=$(echo "${cat}" | sed 's/.*://' | xargs)
+      cat_name=$(echo "${cat}" | sed 's/:.*//' | tr -d '|`\\' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+      cat_count=$(echo "${cat}" | sed 's/.*://' | tr -dc '0-9')
       echo "| \`${cat_name}\` | ${cat_count} |"
     done
     echo ""

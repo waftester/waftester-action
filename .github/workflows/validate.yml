@@ -13,19 +13,20 @@ jobs:
   actionlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: actionlint
         run: |
-          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          # Pin installer to specific commit — never curl|bash from floating main
+          bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/62dc61a45fc95eed8c2b441f0b044a1f6e3ac8b5/scripts/download-actionlint.bash)
           ./actionlint -color
 
   # ── action-yml-schema — validates action.yml against official schema ──
   action-schema:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Validate action.yml schema
-        uses: cardinalby/schema-validator-action@v3
+        uses: cardinalby/schema-validator-action@77eb17b070f282db4680215551cae4d9c379f2f4 # v3
         with:
           file: action.yml
           schema: 'https://json.schemastore.org/github-action.json'
@@ -34,9 +35,9 @@ jobs:
   shellcheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: ShellCheck install.sh
-        uses: ludeeus/action-shellcheck@2.0.0
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
         with:
           scandir: '.'
           severity: warning
@@ -45,9 +46,9 @@ jobs:
   markdownlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: markdownlint
-        uses: DavidAnson/markdownlint-cli2-action@v22
+        uses: DavidAnson/markdownlint-cli2-action@07035fd053f7be764496c0f8d8f9f41f98305101 # v22
         with:
           globs: '**/*.md'
 
@@ -55,17 +56,18 @@ jobs:
   yaml-validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Validate YAML files
         run: |
           set -euo pipefail
           errors=0
-          for f in $(find . -name '*.yml' -o -name '*.yaml' | grep -v node_modules); do
-            if ! python3 -c "import yaml; yaml.safe_load(open('$f'))"; then
+          # Use process substitution (not pipe) so error counter stays in current shell
+          while IFS= read -r -d '' f; do
+            if ! python3 -c "import yaml, sys; yaml.safe_load(open(sys.argv[1]))" "$f"; then
               echo "::error file=$f::Invalid YAML syntax"
               errors=$((errors + 1))
             fi
-          done
+          done < <(find . \( -name '*.yml' -o -name '*.yaml' \) -not -path '*/node_modules/*' -print0)
           if [[ $errors -gt 0 ]]; then
             echo "::error::$errors YAML file(s) have syntax errors"
             exit 1
@@ -76,7 +78,7 @@ jobs:
   bash-syntax:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Check bash syntax
         run: |
           set -euo pipefail
@@ -90,7 +92,7 @@ jobs:
   action-dry-run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Verify action.yml structure
         run: |
           set -euo pipefail
@@ -124,7 +126,7 @@ jobs:
   validate-examples:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Validate example workflows
         run: |
           set -euo pipefail
@@ -134,7 +136,7 @@ jobs:
               echo "::error::No example workflows found in examples/"
               exit 1
             fi
-            python3 -c "import yaml; yaml.safe_load(open('$f'))"
+            python3 -c "import yaml, sys; yaml.safe_load(open(sys.argv[1]))" "$f"
             count=$((count + 1))
           done
           echo "✅ $count example workflow(s) valid"
@@ -143,9 +145,9 @@ jobs:
   link-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Check markdown links
-        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        uses: gaurav-nelson/github-action-markdown-link-check@499c1e7f3637c131334fa8e937c45144f79d72d2 # v1
         with:
           use-quiet-mode: 'yes'
           config-file: '.markdown-link-check.json'
