@@ -194,7 +194,7 @@ fi
 # - sha256sum available on Linux and Windows (Git Bash)
 # - shasum available on macOS
 if command -v sha256sum &>/dev/null; then
-  ACTUAL_HASH=$(sha256sum "${INSTALL_DIR}/${ARCHIVE_NAME}" | awk '{print $1}')
+  ACTUAL_HASH=$(sha256sum "${INSTALL_DIR}/${ARCHIVE_NAME}" | awk '{print $1}' | tr -d '\\\\')
 elif command -v shasum &>/dev/null; then
   ACTUAL_HASH=$(shasum -a 256 "${INSTALL_DIR}/${ARCHIVE_NAME}" | awk '{print $1}')
 else
