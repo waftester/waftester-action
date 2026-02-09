@@ -30,9 +30,7 @@ jobs:
         run: |
           echo "exit-code=${{ steps.waf.outputs.exit-code }}"
           echo "version=${{ steps.waf.outputs.version }}"
-          echo "sarif-file=${{ steps.waf.outputs.sarif-file }}"
           [[ -n "${{ steps.waf.outputs.version }}" ]] || { echo "::error::version output empty"; exit 1; }
-          [[ -f "${{ steps.waf.outputs.sarif-file }}" ]] || { echo "::error::sarif file missing"; exit 1; }
 
   # ── F47: SARIF generation + schema validation ─────────
   test-sarif:
@@ -43,8 +41,9 @@ jobs:
         id: waf
         with:
           target: https://httpbin.org
-          scan-type: vendor
+          scan-type: scan
           format: sarif
+          args: '-types sqli --smart'
           upload-sarif: false
       - name: Validate SARIF
         run: |

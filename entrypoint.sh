@@ -105,7 +105,8 @@ if [[ "${INPUT_SCAN_TYPE}" != "custom" ]]; then
 
   # Supplemental payloads (WAF_TESTER_PAYLOAD_DIR env var is MCP-only;
   # scan/auto/bypass commands require the --payloads flag — see F1)
-  if [[ -d "${WAF_TESTER_PAYLOAD_DIR:-}" ]]; then
+  # vendor subcommand does not accept --payloads
+  if [[ -d "${WAF_TESTER_PAYLOAD_DIR:-}" && "${INPUT_SCAN_TYPE}" != "vendor" ]]; then
     CMD+=("--payloads" "${WAF_TESTER_PAYLOAD_DIR}")
   fi
 fi
