@@ -13,7 +13,7 @@ jobs:
   actionlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: actionlint
         run: |
           bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
@@ -23,7 +23,7 @@ jobs:
   action-schema:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Validate action.yml schema
         uses: cardinalby/schema-validator-action@v3
         with:
@@ -34,7 +34,7 @@ jobs:
   shellcheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: ShellCheck install.sh
         uses: ludeeus/action-shellcheck@2.0.0
         with:
@@ -45,7 +45,7 @@ jobs:
   markdownlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v19
         with:
@@ -55,7 +55,7 @@ jobs:
   yaml-validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Validate YAML files
         run: |
           set -euo pipefail
@@ -76,7 +76,7 @@ jobs:
   bash-syntax:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check bash syntax
         run: |
           set -euo pipefail
@@ -90,7 +90,7 @@ jobs:
   action-dry-run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Verify action.yml structure
         run: |
           set -euo pipefail
@@ -124,7 +124,7 @@ jobs:
   validate-examples:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Validate example workflows
         run: |
           set -euo pipefail
@@ -143,7 +143,7 @@ jobs:
   link-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check markdown links
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
