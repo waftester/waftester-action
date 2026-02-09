@@ -1,0 +1,152 @@
+name: Validate
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # ── actionlint — validates action.yml + all workflow YAML ──
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: actionlint
+        uses: rhysd/actionlint-action@v1
+        with:
+          flags: '-color'
+
+  # ── action-yml-schema — validates action.yml against official schema ──
+  action-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate action.yml schema
+        uses: cardinalby/schema-validator-action@v3
+        with:
+          file: action.yml
+          schema: 'https://json.schemastore.org/github-action.json'
+
+  # ── ShellCheck — lint all bash scripts ──
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck install.sh
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: '.'
+          severity: warning
+
+  # ── Markdown lint — validate all documentation ──
+  markdownlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: '**/*.md'
+
+  # ── YAML structure — validate all YAML files parse correctly ──
+  yaml-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate YAML files
+        run: |
+          set -euo pipefail
+          errors=0
+          for f in $(find . -name '*.yml' -o -name '*.yaml' | grep -v node_modules); do
+            if ! python3 -c "import yaml; yaml.safe_load(open('$f'))"; then
+              echo "::error file=$f::Invalid YAML syntax"
+              errors=$((errors + 1))
+            fi
+          done
+          if [[ $errors -gt 0 ]]; then
+            echo "::error::$errors YAML file(s) have syntax errors"
+            exit 1
+          fi
+          echo "✅ All YAML files valid"
+
+  # ── Script syntax — bash -n parse check ──
+  bash-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check bash syntax
+        run: |
+          set -euo pipefail
+          for f in install.sh entrypoint.sh; do
+            echo "Checking $f..."
+            bash -n "$f"
+          done
+          echo "✅ All scripts parse correctly"
+
+  # ── Composite action dry-run — verify steps can be resolved ──
+  action-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify action.yml structure
+        run: |
+          set -euo pipefail
+          # Check required top-level keys
+          for key in name description inputs outputs runs; do
+            if ! grep -q "^${key}:" action.yml; then
+              echo "::error::Missing required key: ${key}"
+              exit 1
+            fi
+          done
+          # Check runs.using is 'composite'
+          if ! grep -q "using: 'composite'" action.yml && \
+             ! grep -q 'using: "composite"' action.yml && \
+             ! grep -q "using: composite" action.yml; then
+            echo "::error::action.yml must use 'composite' runs type"
+            exit 1
+          fi
+          # Check all referenced scripts exist
+          for script in install.sh entrypoint.sh; do
+            if [[ ! -f "$script" ]]; then
+              echo "::error::Referenced script not found: $script"
+              exit 1
+            fi
+            if [[ ! -x "$script" ]]; then
+              echo "::warning file=$script::Script is not executable (chmod +x needed)"
+            fi
+          done
+          echo "✅ action.yml structure valid"
+
+  # ── Example workflows — validate all example YAML files ──
+  validate-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate example workflows
+        run: |
+          set -euo pipefail
+          count=0
+          for f in examples/*.yml; do
+            if [[ ! -f "$f" ]]; then
+              echo "::error::No example workflows found in examples/"
+              exit 1
+            fi
+            python3 -c "import yaml; yaml.safe_load(open('$f'))"
+            count=$((count + 1))
+          done
+          echo "✅ $count example workflow(s) valid"
+
+  # ── Link check — verify README links aren't broken ──
+  link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          config-file: '.markdown-link-check.json'
+        continue-on-error: true  # Don't fail on external link issues
