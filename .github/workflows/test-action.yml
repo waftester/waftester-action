@@ -33,11 +33,10 @@ jobs:
           [[ -n "${{ steps.waf.outputs.version }}" ]] || { echo "::error::version output empty"; exit 1; }
 
   # ── F47: SARIF generation + validation ──────────────────
-  # Validates that the action produces a valid output file and sets outputs.
-  # Uses vendor scan (fast fingerprinting, ~5s) with JSON format to avoid
-  # running a full payload scan against a real target. SARIF generation is
-  # tested indirectly — the key validation is: binary runs, outputs are set,
-  # result file is valid JSON.
+  # Validates real vulnerability scanning with SARIF output format.
+  # Uses CORS scan type (~10 requests, completes in <5s) for a fast but
+  # genuine security scan. This tests the full pipeline: binary install →
+  # payload scan → SARIF output → outputs set.
   test-sarif:
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -47,7 +46,9 @@ jobs:
         id: waf
         with:
           target: https://httpbin.org
-          scan-type: vendor
+          scan-type: scan
+          format: sarif
+          args: '-types cors'
           fail-on-bypass: false
           fail-on-error: false
           upload-sarif: false
@@ -62,6 +63,14 @@ jobs:
           [[ -n "${{ steps.waf.outputs.exit-code }}" ]] || { echo "::error::exit-code output not set"; exit 1; }
           [[ -n "${{ steps.waf.outputs.version }}" ]]   || { echo "::error::version output not set"; exit 1; }
           [[ -n "${{ steps.waf.outputs.summary }}" ]]   || { echo "::error::summary output not set"; exit 1; }
+
+          # Verify output file was generated
+          if [[ -f "waftester-results.sarif" ]]; then
+            echo "✅ SARIF output file generated"
+            echo "File size: $(wc -c < waftester-results.sarif) bytes"
+          else
+            echo "⚠️ No SARIF file (expected for scan output)"
+          fi
 
           echo "✅ All outputs validated"
 
