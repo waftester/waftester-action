@@ -1,0 +1,146 @@
+name: 'WAFtester — WAF Security Testing'
+description: 'Test, fingerprint, and bypass WAFs with 2,800+ payloads. SARIF output for GitHub Security tab.'
+author: 'WAFtester'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  target:
+    description: 'Target URL to scan (e.g., https://app.example.com)'
+    required: true
+
+  scan-type:
+    description: |
+      Scan type: scan (default), auto, bypass, assess, vendor, discover, fuzz, nuclei, custom.
+      Use "custom" with "args" for full CLI control.
+    required: false
+    default: 'scan'
+
+  version:
+    description: 'WAFtester version (e.g., 2.8.2). Default: latest stable release.'
+    required: false
+    default: 'latest'
+
+  format:
+    description: |
+      Output format: sarif (default), json, jsonl, csv, md, html, pdf.
+      For JUnit/CycloneDX/SonarQube/GitLab SAST, use the dedicated export flags
+      via the "args" input (e.g., args: '-junit-export results.xml').
+    required: false
+    default: 'sarif'
+
+  output:
+    description: 'Output file path for scan results'
+    required: false
+    default: 'waftester-results.sarif'
+
+  args:
+    description: |
+      Additional CLI arguments passed directly to waf-tester.
+      Examples: "--smart --tamper-auto", "-types sqli,xss -c 50", "--proxy http://proxy:8080"
+      When scan-type is "custom", this becomes the entire argument string.
+    required: false
+    default: ''
+
+  fail-on-bypass:
+    description: 'Fail the workflow step if WAF bypasses are found (exit code 1 → failure)'
+    required: false
+    default: 'false'
+
+  fail-on-error:
+    description: 'Fail the workflow step on infrastructure errors (exit codes 2-6). Default: true.'
+    required: false
+    default: 'true'
+
+  upload-sarif:
+    description: 'Automatically upload SARIF results to GitHub Code Scanning (Security tab)'
+    required: false
+    default: 'true'
+
+  sarif-category:
+    description: 'Category for SARIF upload — groups results in the Security tab. Useful for multi-target scans.'
+    required: false
+    default: 'waftester'
+
+  token:
+    description: 'GitHub token for downloading releases and uploading SARIF. Default: github.token.'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  sarif-file:
+    description: 'Path to the generated output file'
+    value: ${{ steps.scan.outputs.sarif-file }}
+
+  exit-code:
+    description: 'WAFtester exit code (0=clean, 1=bypasses, 2=errors, 3=config, 4=unreachable, 5=interrupted, 6=license)'
+    value: ${{ steps.scan.outputs.exit-code }}
+
+  bypass-count:
+    description: 'Number of WAF bypasses discovered'
+    value: ${{ steps.scan.outputs.bypass-count }}
+
+  summary:
+    description: 'One-line scan summary for use in PR comments or notifications'
+    value: ${{ steps.scan.outputs.summary }}
+
+  version:
+    description: 'Resolved WAFtester version that was installed'
+    value: ${{ steps.install.outputs.version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install WAFtester
+      id: install
+      shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        GITHUB_TOKEN: ${{ inputs.token }}
+      run: bash "${{ github.action_path }}/install.sh"
+
+    - name: Run WAFtester
+      id: scan
+      shell: bash
+      env:
+        INPUT_TARGET: ${{ inputs.target }}
+        INPUT_SCAN_TYPE: ${{ inputs.scan-type }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_ARGS: ${{ inputs.args }}
+        INPUT_FAIL_ON_BYPASS: ${{ inputs.fail-on-bypass }}
+        INPUT_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+      run: bash "${{ github.action_path }}/entrypoint.sh"
+
+    - name: Upload SARIF to GitHub Security
+      id: upload-sarif
+      if: >-
+        inputs.upload-sarif == 'true' &&
+        inputs.format == 'sarif' &&
+        always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output }}
+        category: ${{ inputs.sarif-category }}
+        wait-for-processing: true
+      continue-on-error: true
+
+    # F43: Detect SARIF upload failure and surface in job summary
+    - name: Check SARIF upload status
+      if: >-
+        inputs.upload-sarif == 'true' &&
+        inputs.format == 'sarif' &&
+        always()
+      shell: bash
+      run: |
+        if [[ "${{ steps.upload-sarif.outcome }}" == "failure" ]]; then
+          echo "::warning::SARIF upload failed — check that the repository has GitHub Advanced Security enabled and the workflow has 'security-events: write' permission."
+          echo "### ⚠️ SARIF Upload Failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Results were **not** uploaded to the Security tab. Possible causes:" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Repository lacks GitHub Advanced Security (required for private repos)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Workflow missing \`permissions: security-events: write\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- SARIF file exceeds 10 MB limit (see Limitations below)" >> "$GITHUB_STEP_SUMMARY"
+        fi

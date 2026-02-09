@@ -1,0 +1,19 @@
+# Force LF line endings for cross-platform compatibility.
+# Shell scripts break with CRLF on Linux/macOS runners.
+
+# Shell scripts — MUST be LF
+*.sh text eol=lf
+
+# YAML — GitHub Actions workflows
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# JSON config files
+*.json text eol=lf
+
+# Markdown documentation
+*.md text eol=lf
+
+# Git config
+.gitignore text eol=lf
+.gitattributes text eol=lf

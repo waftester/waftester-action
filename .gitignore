@@ -1,0 +1,60 @@
+# =============================================================
+# WAFtester Action — .gitignore
+# =============================================================
+
+# ----- OS files -----
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.swp
+*.swo
+*~
+
+# ----- IDE / editor -----
+.idea/
+.vscode/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+
+# ----- Test & scan artifacts -----
+*.sarif
+waftester-results.*
+results.*
+!examples/*.yml
+
+# ----- Node.js (if added later) -----
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ----- Go (if added later) -----
+vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# ----- Build / release -----
+dist/
+build/
+*.tar.gz
+*.zip
+
+# ----- Secrets (never commit) -----
+.env
+.env.*
+*.pem
+*.key
+*.token
