@@ -19,7 +19,7 @@ inputs:
     default: 'scan'
 
   version:
-    description: 'WAFtester version (e.g., 2.8.2). Default: latest stable release.'
+    description: 'WAFtester version (e.g., 2.8.4). Default: latest stable release.'
     required: false
     default: 'latest'
 
