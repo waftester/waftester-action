@@ -5,7 +5,7 @@
 # verifies SHA-256 checksum, and adds to PATH.
 #
 # Expects (set by action.yml):
-#   INPUT_VERSION   — Version to install ("latest" or "2.8.2" or "v2.8.2")
+#   INPUT_VERSION   — Version to install ("latest" or "2.8.4" or "v2.8.4")
 #   GITHUB_TOKEN    — Token for GitHub API (rate limits + private repo access)
 #
 # Sets:
@@ -106,7 +106,7 @@ VERSION="${VERSION#v}"
 # Validate version format (prevent path traversal and confusing errors)
 if [[ "${VERSION}" != "latest" && -n "${VERSION}" ]]; then
   if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
-    log_error "Invalid version format: '${VERSION}'. Expected: X.Y.Z (e.g., 2.8.2)"
+    log_error "Invalid version format: '${VERSION}'. Expected: X.Y.Z (e.g., 2.8.4)"
   fi
 fi
 
@@ -132,9 +132,9 @@ if [[ "${VERSION}" == "latest" || -z "${VERSION}" ]]; then
 
   if [[ "${HTTP_STATUS}" != "200" ]]; then
     case "${HTTP_STATUS}" in
-      403) log_error "GitHub API rate limited (HTTP 403). Set GITHUB_TOKEN or pin a version: version: '2.8.2'" ;;
+      403) log_error "GitHub API rate limited (HTTP 403). Set GITHUB_TOKEN or pin a version: version: '2.8.4'" ;;
       404) log_error "Release not found (HTTP 404). Verify the WAFtester releases repo exists." ;;
-      *)   log_error "GitHub API request failed (HTTP ${HTTP_STATUS}). Try pinning a version: version: '2.8.2'" ;;
+      *)   log_error "GitHub API request failed (HTTP ${HTTP_STATUS}). Try pinning a version: version: '2.8.4'" ;;
     esac
   fi
 
