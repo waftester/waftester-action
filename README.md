@@ -4,7 +4,7 @@ Test, fingerprint, and bypass Web Application Firewalls
 directly in your GitHub Actions workflows.
 
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-WAFtester-blue?logo=github)](https://github.com/marketplace/actions/waftester-waf-security-testing)
-[![CLI Version](https://img.shields.io/badge/CLI-v2.8.6-00ADD8?logo=go&logoColor=white)](https://github.com/waftester/waftester/releases/tag/v2.8.6) <!-- x-cli-version -->
+[![CLI Version](https://img.shields.io/badge/CLI-v2.8.7-00ADD8?logo=go&logoColor=white)](https://github.com/waftester/waftester/releases/tag/v2.8.7) <!-- x-cli-version -->
 [![License](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](LICENSE)
 [![CI](https://github.com/waftester/waftester-action/actions/workflows/test-action.yml/badge.svg)](https://github.com/waftester/waftester-action/actions/workflows/test-action.yml)
 
@@ -264,7 +264,7 @@ jobs:
 | `bypass-count` | Number of WAF bypasses found | `12` |
 | `sarif-file` | Path to the generated SARIF file | `waftester-results.sarif` |
 | `summary` | One-line human-readable summary | `WAFtester found 12 WAF bypass(es)...` |
-| `version` | Installed WAFtester version | `2.8.6` |
+| `version` | Installed WAFtester version | `2.8.7` |
 
 ---
 
@@ -388,15 +388,15 @@ To save the SARIF as a downloadable artifact:
 - uses: waftester/waftester-action@v1
 
 # Pin to exact action release
-- uses: waftester/waftester-action@v1.0.6
+- uses: waftester/waftester-action@v1.0.7
 
 # Pin WAFtester binary version (action auto-downloads)
 - uses: waftester/waftester-action@v1
   with:
-    version: '2.8.6'
+    version: '2.8.7'
 
 # Pin to commit SHA (highest security)
-# Replace with actual SHA from: git rev-parse v1.0.6
+# Replace with actual SHA from: git rev-parse v1.0.7
 - uses: waftester/waftester-action@<commit-sha>
 ```
 
