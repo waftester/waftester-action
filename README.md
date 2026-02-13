@@ -265,7 +265,7 @@ jobs:
 | `bypass-count` | Number of WAF bypasses found | `12` |
 | `sarif-file` | Path to the generated SARIF file | `waftester-results.sarif` |
 | `summary` | One-line human-readable summary | `WAFtester found 12 WAF bypass(es)...` |
-| `version` | Installed WAFtester version | `2.8.7` |
+| `version` | Installed WAFtester version | `2.8.8` |
 
 ---
 
@@ -389,15 +389,15 @@ To save the SARIF as a downloadable artifact:
 - uses: waftester/waftester-action@v1
 
 # Pin to exact action release
-- uses: waftester/waftester-action@v1.0.7
+- uses: waftester/waftester-action@v1.0.8
 
 # Pin WAFtester binary version (action auto-downloads)
 - uses: waftester/waftester-action@v1
   with:
-    version: '2.8.7'
+    version: '2.8.8'
 
 # Pin to commit SHA (highest security)
-# Replace with actual SHA from: git rev-parse v1.0.7
+# Replace with actual SHA from: git rev-parse v1.0.8
 - uses: waftester/waftester-action@<commit-sha>
 ```
 
