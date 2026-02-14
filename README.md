@@ -419,7 +419,7 @@ To save the SARIF as a downloadable artifact:
 - uses: waftester/waftester-action@v1
 
 # Pin to exact action release
-- uses: waftester/waftester-action@v1.0.9
+- uses: waftester/waftester-action@v1.0.10
 
 # Pin WAFtester binary version (action auto-downloads)
 - uses: waftester/waftester-action@v1
@@ -427,7 +427,7 @@ To save the SARIF as a downloadable artifact:
     version: '2.9.0'
 
 # Pin to commit SHA (highest security)
-# Replace with actual SHA from: git rev-parse v1.0.9
+# Replace with actual SHA from: git rev-parse v1.0.10
 - uses: waftester/waftester-action@<commit-sha>
 ```
 
