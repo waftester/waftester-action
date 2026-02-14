@@ -5,7 +5,7 @@ directly in your GitHub Actions workflows.
 
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-WAFtester-blue?logo=github)](https://github.com/marketplace/actions/waftester-waf-security-testing)
 [![Website](https://img.shields.io/badge/website-waftester.com-3b82f6)](https://waftester.com)
-[![CLI Version](https://img.shields.io/badge/CLI-v2.8.9-00ADD8?logo=go&logoColor=white)](https://github.com/waftester/waftester/releases/tag/v2.8.9) <!-- x-cli-version -->
+[![CLI Version](https://img.shields.io/badge/CLI-v2.9.0-00ADD8?logo=go&logoColor=white)](https://github.com/waftester/waftester/releases/tag/v2.9.0) <!-- x-cli-version -->
 [![License](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](LICENSE)
 [![CI](https://github.com/waftester/waftester-action/actions/workflows/test-action.yml/badge.svg)](https://github.com/waftester/waftester-action/actions/workflows/test-action.yml)
 
@@ -119,6 +119,36 @@ jobs:
     scan-type: bypass
     args: '--smart --tamper-auto'
     fail-on-bypass: true
+```
+
+### API Spec Scanning (v2.9.0)
+
+Scan every endpoint defined in an OpenAPI, Swagger, Postman, HAR, AsyncAPI, gRPC, or GraphQL spec:
+
+```yaml
+# OpenAPI / Swagger
+- uses: waftester/waftester-action@v1
+  with:
+    target: https://api.example.com
+    args: '--spec openapi.yaml'
+
+# Postman Collection with environment
+- uses: waftester/waftester-action@v1
+  with:
+    target: https://api.example.com
+    args: '--spec collection.postman_collection.json --env staging.postman_environment.json'
+
+# HAR recording from DevTools
+- uses: waftester/waftester-action@v1
+  with:
+    target: https://api.example.com
+    args: '--spec recording.har --intensity high'
+
+# Dry-run to preview what would be scanned
+- uses: waftester/waftester-action@v1
+  with:
+    target: https://api.example.com
+    args: '--spec openapi.yaml --dry-run'
 ```
 
 ### Scheduled Weekly Audit
@@ -265,7 +295,7 @@ jobs:
 | `bypass-count` | Number of WAF bypasses found | `12` |
 | `sarif-file` | Path to the generated SARIF file | `waftester-results.sarif` |
 | `summary` | One-line human-readable summary | `WAFtester found 12 WAF bypass(es)...` |
-| `version` | Installed WAFtester version | `2.8.9` |
+| `version` | Installed WAFtester version | `2.9.0` |
 
 ---
 
@@ -394,7 +424,7 @@ To save the SARIF as a downloadable artifact:
 # Pin WAFtester binary version (action auto-downloads)
 - uses: waftester/waftester-action@v1
   with:
-    version: '2.8.9'
+    version: '2.9.0'
 
 # Pin to commit SHA (highest security)
 # Replace with actual SHA from: git rev-parse v1.0.9

@@ -12,7 +12,8 @@ and this project adheres to
 
 ### Changed
 
-- Bump bundled CLI to WAFtester v2.8.9
+- Bump bundled CLI to WAFtester v2.9.0
+- Add API spec scanning support (Postman, HAR, AsyncAPI, OpenAPI, Swagger, gRPC, GraphQL)
 
 ## [v1.0.8] - 2026-02-13
 
