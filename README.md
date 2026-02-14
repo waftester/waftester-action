@@ -429,7 +429,6 @@ This GitHub Action is one of several ways to run WAFtester:
 |--------|---------|----------|
 | **GitHub Action** | `- uses: waftester/waftester-action@v1` | CI/CD pipelines |
 | **npm** | `npx @waftester/cli scan -u URL` | Quick install, MCP server |
-| **Go** | `go install github.com/waftester/waftester/cmd/cli@latest` | Go developers |
 | **Docker** | `docker run ghcr.io/waftester/waftester scan -u URL` | Containers |
 | **Binary** | [Download from Releases](https://github.com/waftester/waftester/releases) | Direct install |
 
