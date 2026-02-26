@@ -8,6 +8,12 @@ The format is based on
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.45] - 2026-02-26
+
+### Changed
+
+- Bump bundled CLI to WAFtester v2.9.37
+
 ## [v1.0.44] - 2026-02-26
 
 ### Changed
